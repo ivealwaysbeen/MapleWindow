@@ -31,6 +31,7 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private CharacterAnimationStateMachine? _stateMachine;
     private bool _isTicking;
     private bool _isPlayingSpeech;
+    private string? _primedBaseUrl;
 
     [ObservableProperty]
     private ImageSource? _spriteImage;
@@ -96,6 +97,15 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         _isTicking = true;
         try
         {
+            if (_primedBaseUrl != baseUrl)
+            {
+                // baseUrl changes on character switch (RunSetup -> RefreshAsync), not just at startup —
+                // re-priming picks up the new character's own pose bounds instead of reusing the previous
+                // character's frozen crop rect, which doesn't fit a different character's silhouette.
+                await PrimeSpriteFrameProcessorAsync(baseUrl).ConfigureAwait(true);
+                _primedBaseUrl = baseUrl;
+            }
+
             var frame = _stateMachine.Tick();
             WindowLeft = frame.X;
             // The unflipped character render faces left by default (confirmed live — the original
@@ -115,6 +125,31 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         {
             _isTicking = false;
         }
+    }
+
+    /// <summary>Fetches every known action/frame combo once so the sprite crop (see SpriteFrameProcessor)
+    /// is sized from the full set of poses up front, instead of growing — and visibly shrinking the
+    /// on-screen character — the first time a not-yet-seen pose shows up.</summary>
+    private async Task PrimeSpriteFrameProcessorAsync(string baseUrl)
+    {
+        var frames = new List<byte[]>();
+        foreach (var action in Enum.GetValues<SpriteAction>())
+        {
+            for (var frameIndex = 0; frameIndex < action.FrameCount(); frameIndex++)
+            {
+                try
+                {
+                    frames.Add(await _imageCache.GetFrameAsync(baseUrl, action.ToActionCode(), frameIndex).ConfigureAwait(true));
+                }
+                catch
+                {
+                    // Transient download failure for one pose: Prime still works from whatever it has,
+                    // and Process's own per-frame fallback covers the case where nothing came through.
+                }
+            }
+        }
+
+        if (frames.Count > 0) _spriteFrameProcessor.Prime(frames);
     }
 
     private void OnSpeakQueueReady(object? sender, IReadOnlyList<ResolvedSpeech> queue)
