@@ -29,6 +29,7 @@ public sealed class SpeakCycleService : IDisposable
     ];
 
     private readonly Func<ScheduledContentPool> _currentPool;
+    private readonly Func<string?> _currentOcid;
     private readonly IPhraseRepository _phrases;
     private readonly INotificationPreferenceStore _preferences;
     private readonly IOnceDailyStateStore _onceDailyState;
@@ -49,12 +50,14 @@ public sealed class SpeakCycleService : IDisposable
 
     public SpeakCycleService(
         Func<ScheduledContentPool> currentPool,
+        Func<string?> currentOcid,
         IPhraseRepository phrases,
         INotificationPreferenceStore preferences,
         IOnceDailyStateStore onceDailyState,
         Func<DateTime>? clock = null)
     {
         _currentPool = currentPool;
+        _currentOcid = currentOcid;
         _phrases = phrases;
         _preferences = preferences;
         _onceDailyState = onceDailyState;
@@ -82,9 +85,10 @@ public sealed class SpeakCycleService : IDisposable
     {
         var now = _clock();
         var pool = _currentPool();
+        var ocid = _currentOcid() ?? "";
 
         var messages = Rules.SelectMany(rule => rule.Evaluate(pool, now));
-        var filtered = NotificationFilter.Apply(messages, _preferences, _onceDailyState, now);
+        var filtered = NotificationFilter.Apply(messages, ocid, _preferences, _onceDailyState, now);
 
         var resolved = new List<ResolvedSpeech>();
         foreach (var message in filtered)

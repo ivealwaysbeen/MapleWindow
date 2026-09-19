@@ -128,6 +128,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void LoadItems()
     {
+        var ocid = _configStore.Current?.Ocid ?? "";
         var pool = _polling.CurrentPool;
         var names = pool.DailyContents.Select(i => i.ContentName)
             .Concat(pool.WeeklyContents.Select(i => i.ContentName))
@@ -138,9 +139,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         Items.Clear();
         foreach (var name in names)
         {
-            var pref = _preferences.Get(name);
+            var pref = _preferences.Get(ocid, name);
             var item = new NotificationPrefItem(name, pref.Muted, pref.OnceDailyOnly);
-            item.PropertyChanged += (_, _) => _preferences.Set(name, new NotificationPreference(item.Muted, item.OnceDailyOnly));
+            item.PropertyChanged += (_, _) => _preferences.Set(ocid, name, new NotificationPreference(item.Muted, item.OnceDailyOnly));
             Items.Add(item);
         }
     }

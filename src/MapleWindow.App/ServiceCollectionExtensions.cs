@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         builder.Services.AddSingleton<SchedulerPollingService>();
         builder.Services.AddSingleton(sp => new SpeakCycleService(
             () => sp.GetRequiredService<SchedulerPollingService>().CurrentPool,
+            () => sp.GetRequiredService<IConfigStore>().Current?.Ocid,
             sp.GetRequiredService<IPhraseRepository>(),
             sp.GetRequiredService<INotificationPreferenceStore>(),
             sp.GetRequiredService<IOnceDailyStateStore>()));

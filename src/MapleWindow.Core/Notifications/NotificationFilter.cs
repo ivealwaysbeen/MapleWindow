@@ -13,6 +13,7 @@ public static class NotificationFilter
 {
     public static IReadOnlyList<PhraseMessage> Apply(
         IEnumerable<PhraseMessage> messages,
+        string ocid,
         INotificationPreferenceStore preferences,
         IOnceDailyStateStore onceDailyState,
         DateTime now)
@@ -23,16 +24,16 @@ public static class NotificationFilter
         {
             if (message.RelatedContentNames.Count == 0) continue;
 
-            var allMuted = message.RelatedContentNames.All(name => preferences.Get(name).Muted);
+            var allMuted = message.RelatedContentNames.All(name => preferences.Get(ocid, name).Muted);
             if (allMuted) continue;
 
             if (message.RelatedContentNames.Count == 1)
             {
                 var contentName = message.RelatedContentNames[0];
-                if (preferences.Get(contentName).OnceDailyOnly)
+                if (preferences.Get(ocid, contentName).OnceDailyOnly)
                 {
-                    if (onceDailyState.WasShownToday(contentName, now)) continue;
-                    onceDailyState.MarkShown(contentName, now);
+                    if (onceDailyState.WasShownToday(ocid, contentName, now)) continue;
+                    onceDailyState.MarkShown(ocid, contentName, now);
                 }
             }
 

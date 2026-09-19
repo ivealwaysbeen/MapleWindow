@@ -35,8 +35,10 @@ public class SpeakCycleServiceTests
         return repository;
     }
 
+    private const string Ocid = "캐릭터A";
+
     private static SpeakCycleService BuildService(ScheduledContentPool pool, FakePhraseRepository repository, DateTime now)
-        => new(() => pool, repository, new FakeNotificationPreferenceStore(), new FakeOnceDailyStateStore(), () => now);
+        => new(() => pool, () => Ocid, repository, new FakeNotificationPreferenceStore(), new FakeOnceDailyStateStore(), () => now);
 
     [Fact]
     public void EvaluateAndRaise_OrdersMessages_DailyThenWeeklyThenBossWeeklyThenBossMonthly()
@@ -97,8 +99,8 @@ public class SpeakCycleServiceTests
     public void EvaluateAndRaise_MutedContent_ExcludedFromQueue()
     {
         var preferences = new FakeNotificationPreferenceStore();
-        preferences.Set("위클리A", new NotificationPreference(Muted: true, OnceDailyOnly: false));
-        var service = new SpeakCycleService(FullPool, RepositoryWithAllKeys(), preferences, new FakeOnceDailyStateStore(), () => Monday21st);
+        preferences.Set(Ocid, "위클리A", new NotificationPreference(Muted: true, OnceDailyOnly: false));
+        var service = new SpeakCycleService(FullPool, () => Ocid, RepositoryWithAllKeys(), preferences, new FakeOnceDailyStateStore(), () => Monday21st);
 
         var result = service.EvaluateAndRaise();
 
