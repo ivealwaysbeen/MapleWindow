@@ -59,6 +59,27 @@ public class ContentFilterTests
     }
 
     [Fact]
+    public void BuildPool_EpicDungeonClearedCount_CountsCompleteRegardlessOfRegistrationFlag()
+    {
+        var response = new SchedulerCharacterStateResponse
+        {
+            WeeklyContents =
+            [
+                new DailyWeeklyContentItem { ContentName = "에픽 던전", Type = "contents", RegistrationFlag = "true", NowCount = 1, MaxCount = 1 },
+                new DailyWeeklyContentItem { ContentName = "에픽 던전", Type = "contents", RegistrationFlag = "false", NowCount = 1, MaxCount = 1 },
+                new DailyWeeklyContentItem { ContentName = "에픽 던전", Type = "contents", RegistrationFlag = "false", NowCount = 0, MaxCount = 1 },
+                new DailyWeeklyContentItem { ContentName = "주간 보스 레이드", Type = "contents", RegistrationFlag = "true", NowCount = 1, MaxCount = 1 },
+            ],
+        };
+
+        var pool = ContentFilter.BuildPool(response);
+
+        // 2 complete 에픽 던전 entries counted even though one is registration_flag=="false";
+        // the unrelated "주간 보스 레이드" entry isn't counted.
+        Assert.Equal(2, pool.EpicDungeonClearedCount);
+    }
+
+    [Fact]
     public void BuildPool_MixedRegistrationFlags_OnlyTrueSurvive()
     {
         var response = new SchedulerCharacterStateResponse

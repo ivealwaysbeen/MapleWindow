@@ -36,4 +36,35 @@ public class WeeklyContentRuleTests
 
         Assert.Empty(Rule.Evaluate(pool, new DateTime(2026, 9, 21)));
     }
+
+    [Fact]
+    public void IncompleteEpicDungeon_UnderClearCap_Speaks()
+    {
+        var epicDungeon = new ScheduledContentItem("에픽 던전", "contents", 0, 1, "0", false);
+        var pool = new ScheduledContentPool { WeeklyContents = [epicDungeon], EpicDungeonClearedCount = 2 };
+
+        var message = Assert.Single(Rule.Evaluate(pool, new DateTime(2026, 9, 21)));
+
+        Assert.Equal("에픽 던전", message.Tokens["content_name"]);
+    }
+
+    [Fact]
+    public void IncompleteEpicDungeon_ClearCapReached_Silent()
+    {
+        var epicDungeon = new ScheduledContentItem("에픽 던전", "contents", 0, 1, "0", false);
+        var pool = new ScheduledContentPool { WeeklyContents = [epicDungeon], EpicDungeonClearedCount = 3 };
+
+        Assert.Empty(Rule.Evaluate(pool, new DateTime(2026, 9, 21)));
+    }
+
+    [Fact]
+    public void IncompleteEpicDungeon_ClearCapReached_OtherWeeklyItemsStillSpeak()
+    {
+        var epicDungeon = new ScheduledContentItem("에픽 던전", "contents", 0, 1, "0", false);
+        var pool = new ScheduledContentPool { WeeklyContents = [epicDungeon, Incomplete], EpicDungeonClearedCount = 3 };
+
+        var message = Assert.Single(Rule.Evaluate(pool, new DateTime(2026, 9, 21)));
+
+        Assert.Equal("주간 보스 레이드", message.Tokens["content_name"]);
+    }
 }

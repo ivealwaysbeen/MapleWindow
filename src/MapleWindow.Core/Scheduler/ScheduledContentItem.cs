@@ -14,4 +14,9 @@ public sealed class ScheduledContentPool
     public IReadOnlyList<ScheduledBossItem> BossContents { get; init; } = [];
     public long WeeklyBossClearCount { get; init; }
     public long WeeklyBossClearLimitCount { get; init; }
+
+    /// <summary>Count of complete "에픽 던전" weekly_contents entries, computed from the RAW response
+    /// (registration_flag ignored — see ContentFilter) because the weekly clear cap is account-wide,
+    /// not per-registration.</summary>
+    public long EpicDungeonClearedCount { get; init; }
 }
