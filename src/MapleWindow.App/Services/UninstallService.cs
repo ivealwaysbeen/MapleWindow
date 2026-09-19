@@ -21,12 +21,34 @@ public sealed class UninstallService
 
     public void Uninstall()
     {
+        try
+        {
+            DeleteIfExists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MapleWindow"));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "제거 중 사용자 데이터(AppData) 삭제 실패 — 계속 진행합니다.");
+        }
+
+        try
+        {
+            DeleteIfExists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MapleWindow"));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "제거 중 사용자 데이터(LocalAppData) 삭제 실패 — 계속 진행합니다.");
+        }
+
+        try
+        {
+            _startupRegistrar.Unregister();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "제거 중 시작 프로그램 등록 해제 실패 — 계속 진행합니다.");
+        }
+
         Log.CloseAndFlush();
-
-        DeleteIfExists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MapleWindow"));
-        DeleteIfExists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MapleWindow"));
-
-        _startupRegistrar.Unregister();
 
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exePath))
