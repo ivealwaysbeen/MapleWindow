@@ -95,6 +95,7 @@ public sealed class AppBootstrapper
         await _pollingService.PollOnceAsync();
         var current = _configStore.Current!;
         _pollingService.Start(TimeSpan.FromSeconds(current.PollIntervalSeconds));
+        _pollingService.StartDailyRefresh();
         _speakCycle.Start(TimeSpan.FromSeconds(current.SpeakIntervalSeconds));
 
         ShowOverlay(uiDispatcher);

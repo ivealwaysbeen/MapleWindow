@@ -78,4 +78,20 @@ public class SchedulerPollingServiceTests
 
         Assert.Equal(2, phrases.ReloadCallCount);
     }
+
+    [Theory]
+    [InlineData("2026-09-20 00:00:00", "2026-09-20 00:01:00")]
+    [InlineData("2026-09-20 00:00:30", "2026-09-20 00:01:00")]
+    [InlineData("2026-09-20 00:01:00", "2026-09-21 00:01:00")]
+    [InlineData("2026-09-20 15:30:00", "2026-09-21 00:01:00")]
+    [InlineData("2026-09-20 23:59:59", "2026-09-21 00:01:00")]
+    public void DelayUntilNextDailyRefresh_ReturnsWaitUntilNextLocal0001(string nowText, string expectedNextRunText)
+    {
+        var now = DateTime.Parse(nowText);
+        var expectedNextRun = DateTime.Parse(expectedNextRunText);
+
+        var delay = SchedulerPollingService.DelayUntilNextDailyRefresh(now);
+
+        Assert.Equal(expectedNextRun, now + delay);
+    }
 }

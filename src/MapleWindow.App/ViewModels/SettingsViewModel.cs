@@ -45,7 +45,9 @@ public sealed class WeaponMotionOption
     }
 }
 
-/// <summary>Lists content currently registered (registration_flag=="true") in the latest poll, letting the user mute or "하루 1회만 보기" each one. Changes save immediately — no explicit Save button.</summary>
+/// <summary>Lists content currently registered (registration_flag=="true") in the latest poll, letting the user mute or "하루 1회만 보기" each one. Every control here is an in-memory edit only — nothing is
+/// persisted or takes effect until the "적용" button (<see cref="ApplyCommand"/>) is clicked; closing the
+/// window without applying discards the edits.</summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private const int MinSpeakIntervalSeconds = 5;
@@ -115,71 +117,67 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public void Dispose() => _polling.PoolUpdated -= OnPoolUpdated;
 
-    /// <summary>Applies and persists immediately (no explicit Save button, matching the mute/once-daily toggles above), clamped so a live "지금 켜져있는 프로그램" test can shorten the cycle without risking a zero/negative timer period.</summary>
+    /// <summary>Clamps live so typing can't leave the field at a zero/negative value, but does not persist —
+    /// persisting/applying happens only in <see cref="Apply"/>.</summary>
     partial void OnSpeakIntervalSecondsChanged(int value)
     {
         var clamped = Math.Max(value, MinSpeakIntervalSeconds);
-        if (clamped != value)
-        {
-            SpeakIntervalSeconds = clamped;
-            return; // re-entrant call below will persist the clamped value
-        }
-
-        var config = _configStore.Current;
-        if (config is null) return;
-
-        config.SpeakIntervalSeconds = clamped;
-        _configStore.Save(config);
-        _speakCycle.UpdateInterval(TimeSpan.FromSeconds(clamped));
-    }
-
-    /// <summary>Applies and persists immediately, then pushes the new pose to the already-fetched character_image URL so the overlay updates without waiting for the next poll.</summary>
-    partial void OnWeaponMotionChanged(string value)
-    {
-        var config = _configStore.Current;
-        if (config is null) return;
-
-        config.WeaponMotion = value;
-        _configStore.Save(config);
-        _appearanceService.UpdateWeaponMotion(value);
-    }
-
-    /// <summary>Applies and persists immediately; the overlay picks it up on its next animation tick
-    /// (OverlayViewModel reads CharacterScale fresh every tick, same as it does for the character image URL).</summary>
-    partial void OnCharacterScaleChanged(int value)
-    {
-        var config = _configStore.Current;
-        if (config is null) return;
-
-        config.CharacterScale = value;
-        _configStore.Save(config);
+        if (clamped != value) SpeakIntervalSeconds = clamped; // re-entrant call is a no-op since it's already clamped
     }
 
     [RelayCommand]
-    private void Refresh() => LoadItems();
+    private void Apply()
+    {
+        var config = _configStore.Current;
+        if (config is not null)
+        {
+            config.SpeakIntervalSeconds = SpeakIntervalSeconds;
+            config.WeaponMotion = WeaponMotion;
+            config.CharacterScale = CharacterScale;
+            _configStore.Save(config);
+        }
+
+        _speakCycle.UpdateInterval(TimeSpan.FromSeconds(SpeakIntervalSeconds));
+        _appearanceService.UpdateWeaponMotion(WeaponMotion);
+
+        var ocid = config?.Ocid ?? "";
+        foreach (var item in Items)
+        {
+            _preferences.Set(ocid, item.ContentName, new NotificationPreference(item.Muted, item.OnceDailyOnly));
+        }
+    }
 
     private void LoadItems()
     {
         var ocid = _configStore.Current?.Ocid ?? "";
         var pool = _polling.CurrentPool;
 
+        // A background poll can rebuild Items while the window is open with unapplied edits sitting in it —
+        // carry those forward instead of clobbering them with the last-applied (persisted) value. Content
+        // that isn't in this snapshot (freshly appeared this poll) falls back to the persisted preference.
+        var pending = Items.ToDictionary(i => i.ContentName, i => (i.Muted, i.OnceDailyOnly));
+
         Items.Clear();
-        AddGroup(ocid, "일간 콘텐츠", pool.DailyContents.Select(i => i.ContentName));
-        AddGroup(ocid, "주간 콘텐츠", pool.WeeklyContents.Select(i => i.ContentName));
-        AddGroup(ocid, "보스 (주간)", pool.BossContents.Where(b => b.Cycle == "bossWeekly").Select(b => b.ContentName));
-        AddGroup(ocid, "보스 (월간)", pool.BossContents.Where(b => b.Cycle == "bossMonthly").Select(b => b.ContentName));
+        AddGroup(ocid, "일간 콘텐츠", pool.DailyContents.Select(i => i.ContentName), pending);
+        AddGroup(ocid, "주간 콘텐츠", pool.WeeklyContents.Select(i => i.ContentName), pending);
+        AddGroup(ocid, "보스 (주간)", pool.BossContents.Where(b => b.Cycle == "bossWeekly").Select(b => b.ContentName), pending);
+        AddGroup(ocid, "보스 (월간)", pool.BossContents.Where(b => b.Cycle == "bossMonthly").Select(b => b.ContentName), pending);
     }
 
     /// <summary>Adds one group's rows to Items, contiguously — see ItemsView's remarks for why that matters
     /// for group ordering.</summary>
-    private void AddGroup(string ocid, string groupLabel, IEnumerable<string> contentNames)
+    private void AddGroup(
+        string ocid,
+        string groupLabel,
+        IEnumerable<string> contentNames,
+        IReadOnlyDictionary<string, (bool Muted, bool OnceDailyOnly)> pending)
     {
         foreach (var name in contentNames.Distinct().OrderBy(name => name, StringComparer.CurrentCulture))
         {
-            var pref = _preferences.Get(ocid, name);
-            var item = new NotificationPrefItem(name, groupLabel, pref.Muted, pref.OnceDailyOnly);
-            item.PropertyChanged += (_, _) => _preferences.Set(ocid, name, new NotificationPreference(item.Muted, item.OnceDailyOnly));
-            Items.Add(item);
+            var (muted, onceDailyOnly) = pending.TryGetValue(name, out var edit)
+                ? edit
+                : (_preferences.Get(ocid, name).Muted, _preferences.Get(ocid, name).OnceDailyOnly);
+            Items.Add(new NotificationPrefItem(name, groupLabel, muted, onceDailyOnly));
         }
     }
 }

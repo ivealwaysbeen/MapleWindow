@@ -11,6 +11,7 @@ public sealed class SchedulerPollingService : IDisposable
     private readonly IConfigStore _configStore;
     private readonly IPhraseRepository _phraseRepository;
     private Timer? _timer;
+    private Timer? _dailyTimer;
 
     public ScheduledContentPool CurrentPool { get; private set; } = new();
 
@@ -27,6 +28,31 @@ public sealed class SchedulerPollingService : IDisposable
     public void Start(TimeSpan interval)
     {
         _timer = new Timer(_ => _ = PollOnceAsync(), null, interval, interval);
+    }
+
+    /// <summary>Forces one extra poll shortly after the daily content reset (00:01 local), independent of
+    /// the regular interval poll from <see cref="Start"/> — so today's freshly-reset content shows up
+    /// without waiting for the next periodic tick.</summary>
+    public void StartDailyRefresh() => ScheduleNextDailyRefresh();
+
+    private void ScheduleNextDailyRefresh()
+    {
+        var delay = DelayUntilNextDailyRefresh(DateTime.Now);
+        _dailyTimer = new Timer(async _ =>
+        {
+            await PollOnceAsync().ConfigureAwait(false);
+            ScheduleNextDailyRefresh();
+        }, null, delay, Timeout.InfiniteTimeSpan);
+    }
+
+    /// <summary>Pure so it can be unit tested without a real timer: the wait until the next local 00:01,
+    /// recomputed from wall-clock time on every fire (rather than a fixed 24h period) so it can't drift and
+    /// self-corrects across DST changes.</summary>
+    public static TimeSpan DelayUntilNextDailyRefresh(DateTime now)
+    {
+        var todayAt0001 = now.Date.AddMinutes(1);
+        var nextRun = now < todayAt0001 ? todayAt0001 : todayAt0001.AddDays(1);
+        return nextRun - now;
     }
 
     public async Task PollOnceAsync()
@@ -48,5 +74,9 @@ public sealed class SchedulerPollingService : IDisposable
         }
     }
 
-    public void Dispose() => _timer?.Dispose();
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        _dailyTimer?.Dispose();
+    }
 }
