@@ -75,12 +75,19 @@ public sealed class AppUpdateService
 
         var pid = Environment.ProcessId;
 
+        // The release's own exe name is the source of truth for what to relaunch — not the currently-running
+        // exePath. If a future release renames the exe again (as v1.0.0 -> v1.0.1 already did once), relaunching
+        // the old process's path would either 404 (after /MIR purges it) or, worse, silently keep running the
+        // stale pre-update binary forever, reintroducing every bug that release was meant to fix.
+        var newExeName = Directory.GetFiles(copySource, "*.exe").Select(Path.GetFileName).FirstOrDefault()
+            ?? Path.GetFileName(exePath);
+
         _trayIcon.ShowBalloon("MapleWindow", "업데이트를 적용하고 재시작합니다...");
 
         Process.Start(new ProcessStartInfo
         {
             FileName = "cmd.exe",
-            Arguments = $"/c \"\"{scriptPath}\" {pid} \"{copySource}\" \"{installDir}\" \"{exePath}\"\"",
+            Arguments = $"/c \"\"{scriptPath}\" {pid} \"{copySource}\" \"{installDir}\" \"{newExeName}\"\"",
             CreateNoWindow = true,
             UseShellExecute = false,
             WindowStyle = ProcessWindowStyle.Hidden,
@@ -99,7 +106,7 @@ public sealed class AppUpdateService
         "  ping -n 2 127.0.0.1 >nul\r\n" +
         "  goto wait\r\n" +
         ")\r\n" +
-        "robocopy \"%~2\" \"%~3\" /E /IS /IT /NFL /NDL\r\n" +
+        "robocopy \"%~2\" \"%~3\" /MIR /IS /IT /NFL /NDL\r\n" +
         "start \"\" /d \"%~3\" \"%~4\"\r\n" +
         "del \"%~f0\"\r\n";
 }
