@@ -26,6 +26,7 @@ public sealed class AppBootstrapper
     private readonly INotificationPreferenceStore _notificationPreferences;
     private readonly TrayIconManager _trayIcon;
     private readonly StartupRegistrar _startupRegistrar;
+    private readonly UninstallService _uninstallService;
     private readonly AppUpdateService _updateService;
 
     private OverlayWindow? _overlayWindow;
@@ -43,6 +44,7 @@ public sealed class AppBootstrapper
         INotificationPreferenceStore notificationPreferences,
         TrayIconManager trayIcon,
         StartupRegistrar startupRegistrar,
+        UninstallService uninstallService,
         AppUpdateService updateService)
     {
         _configStore = configStore;
@@ -56,6 +58,7 @@ public sealed class AppBootstrapper
         _notificationPreferences = notificationPreferences;
         _trayIcon = trayIcon;
         _startupRegistrar = startupRegistrar;
+        _uninstallService = uninstallService;
         _updateService = updateService;
     }
 
@@ -185,5 +188,12 @@ public sealed class AppBootstrapper
         };
 
         _trayIcon.ExitRequested += (_, _) => System.Windows.Application.Current.Shutdown();
+
+        _trayIcon.UninstallRequested += (_, _) =>
+        {
+            var confirm = new ConfirmUninstallWindow();
+            if (confirm.ShowDialog() == true)
+                _uninstallService.Uninstall();
+        };
     }
 }

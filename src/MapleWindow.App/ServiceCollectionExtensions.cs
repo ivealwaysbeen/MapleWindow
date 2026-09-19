@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
 
         builder.Services.AddSingleton<TrayIconManager>();
         builder.Services.AddSingleton<StartupRegistrar>();
+        builder.Services.AddSingleton<UninstallService>();
         builder.Services.AddSingleton<AppUpdateService>();
         builder.Services.AddSingleton<AppBootstrapper>();
 
