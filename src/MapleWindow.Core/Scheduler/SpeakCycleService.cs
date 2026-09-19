@@ -64,16 +64,20 @@ public sealed class SpeakCycleService : IDisposable
         _clock = clock ?? (() => DateTime.Now);
     }
 
+    /// <summary>dueTime is zero so the first speech fires right away instead of waiting a full interval;
+    /// subsequent ticks still run every `interval`.</summary>
     public void Start(TimeSpan interval)
     {
-        _timer = new Timer(_ => EvaluateAndRaise(), null, interval, interval);
+        _timer = new Timer(_ => EvaluateAndRaise(), null, TimeSpan.Zero, interval);
     }
 
-    /// <summary>Rescheduling a running timer (rather than a Stop/Start pair) preserves it across a live settings change.</summary>
+    /// <summary>Rescheduling a running timer (rather than a Stop/Start pair) preserves it across a live settings
+    /// change. IntervalChanged fires first so listeners clear the stale queue/bubble before the immediate
+    /// (dueTime-zero) re-evaluation below raises the next one under the new interval.</summary>
     public void UpdateInterval(TimeSpan interval)
     {
-        _timer?.Change(interval, interval);
         IntervalChanged?.Invoke(this, EventArgs.Empty);
+        _timer?.Change(TimeSpan.Zero, interval);
     }
 
     /// <summary>Call after switching characters so a bubble/queue already built from the old character's pool
