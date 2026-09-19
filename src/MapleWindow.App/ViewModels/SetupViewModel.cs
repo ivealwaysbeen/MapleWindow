@@ -114,6 +114,8 @@ public partial class SetupViewModel : ObservableObject
             WorldName = SelectedCharacter.WorldName,
             PollIntervalSeconds = existing?.PollIntervalSeconds ?? 300,
             SpeakIntervalSeconds = existing?.SpeakIntervalSeconds ?? 1800,
+            WeaponMotion = existing?.WeaponMotion ?? "W00",
+            CharacterScale = existing?.CharacterScale ?? 3,
         });
 
         RequestClose?.Invoke(this, true);
