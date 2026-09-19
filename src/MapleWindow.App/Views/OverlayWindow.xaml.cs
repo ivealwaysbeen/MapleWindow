@@ -22,7 +22,9 @@ public partial class OverlayWindow : Window
 
         // Window.Left bound via XAML did not reliably move this AllowsTransparency=True, WindowStyle=None
         // window in testing (position stuck at its initial value despite the bound property changing) —
-        // setting it imperatively here is the confirmed-working alternative.
+        // setting it imperatively here is the confirmed-working alternative. CharacterRow.Height follows
+        // the same imperative pattern for consistency, rather than trying a GridLength binding here.
+        CharacterRow.Height = new GridLength(ViewModel.SpriteRowHeight);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
@@ -69,6 +71,8 @@ public partial class OverlayWindow : Window
     {
         if (e.PropertyName == nameof(OverlayViewModel.WindowLeft))
             Left = ViewModel.WindowLeft;
+        if (e.PropertyName == nameof(OverlayViewModel.SpriteRowHeight))
+            CharacterRow.Height = new GridLength(ViewModel.SpriteRowHeight);
     }
 
     protected override void OnClosed(EventArgs e)

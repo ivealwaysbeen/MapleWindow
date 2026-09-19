@@ -69,6 +69,7 @@ public partial class SetupViewModel : ObservableObject
             var items = response.AccountList
                 .SelectMany(account => account.CharacterList)
                 .Select(c => new CharacterPickerItem(c.Ocid, c.CharacterName, c.WorldName, c.CharacterClass, c.CharacterLevel))
+                .OrderByDescending(c => c.CharacterLevel)
                 .ToList();
 
             if (items.Count == 0)

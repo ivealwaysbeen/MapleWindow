@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,15 +14,20 @@ public sealed partial class NotificationPrefItem : ObservableObject
 {
     public string ContentName { get; }
 
+    /// <summary>Display label for the group this item belongs to — bound as the grouping key for
+    /// SettingsWindow's ListView, which shows one header per distinct value it encounters.</summary>
+    public string GroupLabel { get; }
+
     [ObservableProperty]
     private bool _muted;
 
     [ObservableProperty]
     private bool _onceDailyOnly;
 
-    public NotificationPrefItem(string contentName, bool muted, bool onceDailyOnly)
+    public NotificationPrefItem(string contentName, string groupLabel, bool muted, bool onceDailyOnly)
     {
         ContentName = contentName;
+        GroupLabel = groupLabel;
         _muted = muted;
         _onceDailyOnly = onceDailyOnly;
     }
@@ -52,6 +59,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<NotificationPrefItem> Items { get; } = [];
 
+    /// <summary>Groups Items by NotificationPrefItem.GroupLabel for SettingsWindow's ListView. Items is
+    /// always rebuilt one group at a time (see LoadItems), so each group's rows stay contiguous and the
+    /// view's default first-appearance group ordering matches the intended 일간→주간→보스(주간)→보스(월간) order
+    /// without needing an explicit group sort.</summary>
+    public ICollectionView ItemsView { get; }
+
     public IReadOnlyList<WeaponMotionOption> WeaponMotionOptions { get; } =
     [
         new("W00", "기본 모션 (W00)"),
@@ -61,11 +74,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         new("W04", "무기 제외 (W04)"),
     ];
 
+    public IReadOnlyList<int> CharacterScaleOptions { get; } = [1, 2, 3, 4, 5];
+
     [ObservableProperty]
     private int _speakIntervalSeconds;
 
     [ObservableProperty]
     private string _weaponMotion;
+
+    [ObservableProperty]
+    private int _characterScale;
 
     public SettingsViewModel(
         INotificationPreferenceStore preferences,
@@ -83,6 +101,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _dispatcher = dispatcher;
         _speakIntervalSeconds = configStore.Current?.SpeakIntervalSeconds ?? MinSpeakIntervalSeconds;
         _weaponMotion = configStore.Current?.WeaponMotion ?? "W00";
+        _characterScale = configStore.Current?.CharacterScale ?? 3;
+        ItemsView = CollectionViewSource.GetDefaultView(Items);
+        ItemsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(NotificationPrefItem.GroupLabel)));
         LoadItems();
 
         // Re-poll (character switch, or just the next periodic tick) can land on a threadpool thread —
@@ -123,6 +144,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _appearanceService.UpdateWeaponMotion(value);
     }
 
+    /// <summary>Applies and persists immediately; the overlay picks it up on its next animation tick
+    /// (OverlayViewModel reads CharacterScale fresh every tick, same as it does for the character image URL).</summary>
+    partial void OnCharacterScaleChanged(int value)
+    {
+        var config = _configStore.Current;
+        if (config is null) return;
+
+        config.CharacterScale = value;
+        _configStore.Save(config);
+    }
+
     [RelayCommand]
     private void Refresh() => LoadItems();
 
@@ -130,17 +162,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         var ocid = _configStore.Current?.Ocid ?? "";
         var pool = _polling.CurrentPool;
-        var names = pool.DailyContents.Select(i => i.ContentName)
-            .Concat(pool.WeeklyContents.Select(i => i.ContentName))
-            .Concat(pool.BossContents.Select(b => b.ContentName))
-            .Distinct()
-            .OrderBy(name => name, StringComparer.CurrentCulture);
 
         Items.Clear();
-        foreach (var name in names)
+        AddGroup(ocid, "일간 콘텐츠", pool.DailyContents.Select(i => i.ContentName));
+        AddGroup(ocid, "주간 콘텐츠", pool.WeeklyContents.Select(i => i.ContentName));
+        AddGroup(ocid, "보스 (주간)", pool.BossContents.Where(b => b.Cycle == "bossWeekly").Select(b => b.ContentName));
+        AddGroup(ocid, "보스 (월간)", pool.BossContents.Where(b => b.Cycle == "bossMonthly").Select(b => b.ContentName));
+    }
+
+    /// <summary>Adds one group's rows to Items, contiguously — see ItemsView's remarks for why that matters
+    /// for group ordering.</summary>
+    private void AddGroup(string ocid, string groupLabel, IEnumerable<string> contentNames)
+    {
+        foreach (var name in contentNames.Distinct().OrderBy(name => name, StringComparer.CurrentCulture))
         {
             var pref = _preferences.Get(ocid, name);
-            var item = new NotificationPrefItem(name, pref.Muted, pref.OnceDailyOnly);
+            var item = new NotificationPrefItem(name, groupLabel, pref.Muted, pref.OnceDailyOnly);
             item.PropertyChanged += (_, _) => _preferences.Set(ocid, name, new NotificationPreference(item.Muted, item.OnceDailyOnly));
             Items.Add(item);
         }

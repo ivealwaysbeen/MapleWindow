@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MapleWindow.App.Services;
 using MapleWindow.Core.Animation;
+using MapleWindow.Core.Config;
 using MapleWindow.Core.ImageCache;
 using MapleWindow.Core.Scheduler;
 
@@ -17,10 +18,16 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan SpeechDisplayDuration = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan InterLineDelay = TimeSpan.FromSeconds(1);
 
+    /// <summary>Character row height (px) at the reference scale (x3) — the size the overlay always used
+    /// before the scale option existed. Other scale levels are proportional to this.</summary>
+    private const double ReferenceRowHeight = 170.0;
+    private const int ReferenceScale = 3;
+
     private readonly ICharacterImageCache _imageCache;
     private readonly SpriteFrameProcessor _spriteFrameProcessor;
     private readonly CharacterAppearanceService _appearanceService;
     private readonly SpeakCycleService _speakCycle;
+    private readonly IConfigStore _configStore;
     private readonly Dispatcher _dispatcher;
 
     private readonly DispatcherTimer _animationTimer;
@@ -38,6 +45,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _scaleX = 1;
+
+    [ObservableProperty]
+    private double _spriteRowHeight = ReferenceRowHeight;
 
     [ObservableProperty]
     private double _windowLeft;
@@ -59,13 +69,16 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
         SpriteFrameProcessor spriteFrameProcessor,
         CharacterAppearanceService appearanceService,
         SpeakCycleService speakCycle,
+        IConfigStore configStore,
         Dispatcher dispatcher)
     {
         _imageCache = imageCache;
         _spriteFrameProcessor = spriteFrameProcessor;
         _appearanceService = appearanceService;
         _speakCycle = speakCycle;
+        _configStore = configStore;
         _dispatcher = dispatcher;
+        SpriteRowHeight = RowHeightForScale(configStore.Current?.CharacterScale ?? ReferenceScale);
 
         _animationTimer = new DispatcherTimer { Interval = AnimationTickInterval };
         _animationTimer.Tick += OnAnimationTick;
@@ -112,6 +125,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             // Right-unflipped/Left-flipped assumption showed the character facing away from its travel
             // direction), so Right is the flipped case here.
             ScaleX = frame.Facing == FacingDirection.Right ? -1 : 1;
+            // Read fresh from config every tick (same pattern as CharacterImageBaseUrl above) so a scale
+            // change in the settings window is picked up live, no explicit push/event needed.
+            SpriteRowHeight = RowHeightForScale(_configStore.Current?.CharacterScale ?? ReferenceScale);
 
             var bytes = await _imageCache.GetFrameAsync(baseUrl, frame.Action.ToActionCode(), frame.FrameIndex).ConfigureAwait(true);
             var trimmed = await Task.Run(() => _spriteFrameProcessor.Process(bytes)).ConfigureAwait(true);
@@ -208,6 +224,9 @@ public partial class OverlayViewModel : ObservableObject, IDisposable
             BubbleVisibility = Visibility.Collapsed;
         });
     }
+
+    private static double RowHeightForScale(int scale) =>
+        ReferenceRowHeight * Math.Clamp(scale, 1, 5) / ReferenceScale;
 
     private static BitmapImage ToBitmapImage(byte[] bytes)
     {

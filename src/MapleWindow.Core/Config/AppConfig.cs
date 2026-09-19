@@ -11,4 +11,7 @@ public sealed class AppConfig
 
     /// <summary>Nexon character_image wmotion param (W00~W04). See CharacterAppearanceService.</summary>
     public string WeaponMotion { get; set; } = "W00";
+
+    /// <summary>Overlay character render size, 1~5. 3 is the original/reference size.</summary>
+    public int CharacterScale { get; set; } = 3;
 }

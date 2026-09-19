@@ -25,6 +25,7 @@ public class ConfigServiceTests : IDisposable
             PollIntervalSeconds = 300,
             SpeakIntervalSeconds = 1800,
             WeaponMotion = "W02",
+            CharacterScale = 5,
         };
 
         service.Save(config);
@@ -42,6 +43,7 @@ public class ConfigServiceTests : IDisposable
         Assert.Equal(config.PollIntervalSeconds, loaded.PollIntervalSeconds);
         Assert.Equal(config.SpeakIntervalSeconds, loaded.SpeakIntervalSeconds);
         Assert.Equal(config.WeaponMotion, loaded.WeaponMotion);
+        Assert.Equal(config.CharacterScale, loaded.CharacterScale);
     }
 
     [Fact]
@@ -64,6 +66,20 @@ public class ConfigServiceTests : IDisposable
         var loaded = service.Load();
 
         Assert.Equal("W00", loaded!.WeaponMotion);
+    }
+
+    [Fact]
+    public void Load_LegacyConfigWithoutCharacterScale_DefaultsTo3()
+    {
+        var service = new ConfigService(new DpapiProtector(), _tempPath);
+        service.Save(new AppConfig { ApiKey = "k", Ocid = "o", CharacterName = "n", WorldName = "w" });
+        var json = JsonNode.Parse(File.ReadAllText(_tempPath))!.AsObject();
+        json.Remove("CharacterScale");
+        File.WriteAllText(_tempPath, json.ToJsonString());
+
+        var loaded = service.Load();
+
+        Assert.Equal(3, loaded!.CharacterScale);
     }
 
     [Fact]

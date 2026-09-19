@@ -155,7 +155,7 @@ public sealed class AppBootstrapper
 
     private void ShowOverlay(Dispatcher dispatcher)
     {
-        var overlayViewModel = new OverlayViewModel(_imageCache, _spriteFrameProcessor, _appearanceService, _speakCycle, dispatcher);
+        var overlayViewModel = new OverlayViewModel(_imageCache, _spriteFrameProcessor, _appearanceService, _speakCycle, _configStore, dispatcher);
         _overlayWindow = new OverlayWindow(overlayViewModel);
         _overlayWindow.Show();
     }

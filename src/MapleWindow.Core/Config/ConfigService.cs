@@ -44,6 +44,7 @@ public sealed class ConfigService : IConfigStore
             PollIntervalSeconds = persisted.PollIntervalSeconds,
             SpeakIntervalSeconds = persisted.SpeakIntervalSeconds,
             WeaponMotion = persisted.WeaponMotion,
+            CharacterScale = persisted.CharacterScale,
         };
         Current = config;
         return config;
@@ -64,6 +65,7 @@ public sealed class ConfigService : IConfigStore
             PollIntervalSeconds = config.PollIntervalSeconds,
             SpeakIntervalSeconds = config.SpeakIntervalSeconds,
             WeaponMotion = config.WeaponMotion,
+            CharacterScale = config.CharacterScale,
         };
         File.WriteAllText(_configPath, JsonSerializer.Serialize(persisted, JsonOptions));
         Current = config;

@@ -9,12 +9,14 @@
         SizeToContent="Height"
         WindowStartupLocation="Manual">
 
-    <!-- Row1's fixed height keeps the character's rendered size constant whether or not the bubble
-         is showing. The window itself is SizeToContent="Height", so the bubble's Auto row (Row0)
-         grows the window upward from the bottom — see OnSizeChanged, which re-pins the character's
-         feet to the same screen-bottom pivot every time Height changes, instead of letting the
-         fixed-height character row get pushed down as Row0 grows (Grid rows always stack from the
-         top; there's no such thing as a bottom-anchored row without a window resize to match).
+    <!-- CharacterRow's height (set from OverlayViewModel.SpriteRowHeight, see OverlayWindow.xaml.cs) is what
+         determines the character's rendered size — Stretch="Uniform" just fills whatever height this row is
+         given, so scaling the character is purely a matter of resizing this row. The window itself is
+         SizeToContent="Height", so the bubble's Auto row (Row0) grows the window upward from the bottom —
+         see OnSizeChanged, which re-pins the character's feet to the same screen-bottom pivot every time
+         Height changes (whether from the bubble appearing or the scale option changing), instead of letting
+         CharacterRow get pushed down as Row0 grows (Grid rows always stack from the top; there's no such
+         thing as a bottom-anchored row without a window resize to match).
          Row0's Visibility is Hidden (not Collapsed) between lines of the same speech cycle, so it keeps
          reserving its layout space — a window resize/reposition round-trip on every single line was
          visibly flickering the overlay. Collapsed is reserved for when the whole queue is done and the
@@ -22,7 +24,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="170" />
+            <RowDefinition x:Name="CharacterRow" Height="170" />
         </Grid.RowDefinitions>
 
         <views:SpeechBubbleControl Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,8"

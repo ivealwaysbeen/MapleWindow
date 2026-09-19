@@ -10,4 +10,5 @@ internal sealed class PersistedConfig
     public int PollIntervalSeconds { get; set; } = 300;
     public int SpeakIntervalSeconds { get; set; } = 1800;
     public string WeaponMotion { get; set; } = "W00";
+    public int CharacterScale { get; set; } = 3;
 }
