@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MapleWindow.Core\MapleWindow.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fonts\Maplestory Light.ttf" />
+    <Resource Include="Fonts\Maplestory Bold.ttf" />
+    <Resource Include="Resources\tray-icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <Version>1.0.0</Version>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- This is a WPF app; DPI awareness is correctly set via app.manifest. WFO0003 is WinForms' analyzer
+         suggesting its own ApplicationHighDpiMode property, which doesn't apply here — WinForms is only
+         used for the tray icon (System.Windows.Forms.NotifyIcon), not for any DPI-sensitive UI surface. -->
+    <NoWarn>WFO0003</NoWarn>
+  </PropertyGroup>
+
+</Project>
