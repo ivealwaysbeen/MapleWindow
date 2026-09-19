@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Threading;
 using MapleWindow.App.Services;
 using MapleWindow.App.ViewModels;
@@ -64,10 +65,12 @@ public sealed class AppBootstrapper
 
     public async Task RunAsync()
     {
-        _trayIcon.Show();
-        await _updateService.CheckAndApplyAsync();
-
         var uiDispatcher = Dispatcher.CurrentDispatcher;
+
+        _trayIcon.Show();
+        InitializeTray(uiDispatcher);
+
+        await _updateService.CheckAndApplyAsync();
 
         var config = _configStore.Load();
         if (config is null)
@@ -95,7 +98,6 @@ public sealed class AppBootstrapper
         _speakCycle.Start(TimeSpan.FromSeconds(current.SpeakIntervalSeconds));
 
         ShowOverlay(uiDispatcher);
-        InitializeTray(uiDispatcher);
     }
 
     private async Task RefreshOcidAsync(AppConfig config)
@@ -191,7 +193,8 @@ public sealed class AppBootstrapper
 
         _trayIcon.UninstallRequested += (_, _) =>
         {
-            var confirm = new ConfirmUninstallWindow();
+            var installDir = Path.GetDirectoryName(Environment.ProcessPath) ?? "(알 수 없는 폴더)";
+            var confirm = new ConfirmUninstallWindow(installDir);
             if (confirm.ShowDialog() == true)
                 _uninstallService.Uninstall();
         };

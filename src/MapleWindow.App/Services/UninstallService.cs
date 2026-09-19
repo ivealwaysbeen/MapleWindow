@@ -13,10 +13,12 @@ namespace MapleWindow.App.Services;
 public sealed class UninstallService
 {
     private readonly StartupRegistrar _startupRegistrar;
+    private readonly TrayIconManager _trayIcon;
 
-    public UninstallService(StartupRegistrar startupRegistrar)
+    public UninstallService(StartupRegistrar startupRegistrar, TrayIconManager trayIcon)
     {
         _startupRegistrar = startupRegistrar;
+        _trayIcon = trayIcon;
     }
 
     public void Uninstall()
@@ -53,6 +55,7 @@ public sealed class UninstallService
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exePath))
         {
+            _trayIcon.Dispose();
             Environment.Exit(0);
             return;
         }
@@ -73,6 +76,7 @@ public sealed class UninstallService
             WindowStyle = ProcessWindowStyle.Hidden,
         });
 
+        _trayIcon.Dispose();
         Environment.Exit(0);
     }
 
@@ -86,9 +90,9 @@ public sealed class UninstallService
         ":wait\r\n" +
         "tasklist /fi \"PID eq %1\" 2>nul | find \"%1\" >nul\r\n" +
         "if not errorlevel 1 (\r\n" +
-        "  timeout /t 1 /nobreak >nul\r\n" +
+        "  ping -n 2 127.0.0.1 >nul\r\n" +
         "  goto wait\r\n" +
         ")\r\n" +
-        "rmdir /s /q \"%2\"\r\n" +
+        "rmdir /s /q \"%~2\"\r\n" +
         "del \"%~f0\"\r\n";
 }

@@ -19,7 +19,7 @@ public sealed class GithubReleaseUpdateChecker : IUpdateChecker
     public GithubReleaseUpdateChecker(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _httpClient.BaseAddress ??= new Uri("https://api.github.com");
+        _httpClient.BaseAddress = new Uri("https://api.github.com");
         _httpClient.Timeout = TimeSpan.FromSeconds(5);
         if (_httpClient.DefaultRequestHeaders.UserAgent.Count == 0)
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("MapleWindow-UpdateChecker");

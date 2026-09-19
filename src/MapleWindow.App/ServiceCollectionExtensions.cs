@@ -29,7 +29,6 @@ public static class ServiceCollectionExtensions
         builder.Services.AddHttpClient<INexonApiClient, NexonApiClient>();
         builder.Services.AddHttpClient<ICharacterImageCache, CharacterImageCache>();
         builder.Services.AddHttpClient<IUpdateChecker, GithubReleaseUpdateChecker>();
-        builder.Services.AddHttpClient<AppUpdateService>();
 
         builder.Services.AddSingleton<IDataProtector, DpapiProtector>();
         builder.Services.AddSingleton<IConfigStore, ConfigService>();

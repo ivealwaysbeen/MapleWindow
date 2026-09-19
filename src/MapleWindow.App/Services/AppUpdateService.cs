@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using MapleWindow.Core.Updates;
 using Serilog;
 
@@ -23,6 +24,7 @@ public sealed class AppUpdateService
     public AppUpdateService(HttpClient httpClient, IUpdateChecker updateChecker, TrayIconManager trayIcon)
     {
         _httpClient = httpClient;
+        _httpClient.Timeout = Timeout.InfiniteTimeSpan;
         _updateChecker = updateChecker;
         _trayIcon = trayIcon;
     }
@@ -56,8 +58,6 @@ public sealed class AppUpdateService
         var zipPath = Path.Combine(workDir, "download.zip");
         var extractedDir = Path.Combine(workDir, "extracted");
 
-        _trayIcon.ShowBalloon("MapleWindow", "업데이트를 적용하고 재시작합니다...");
-
         await using (var fileStream = File.Create(zipPath))
         await using (var httpStream = await _httpClient.GetStreamAsync(latest.ZipAssetUrl))
         {
@@ -66,20 +66,28 @@ public sealed class AppUpdateService
 
         ZipFile.ExtractToDirectory(zipPath, extractedDir, overwriteFiles: true);
 
+        // Release zip wraps published files in a top-level "MapleWindow" folder (see release.yml) so a flat
+        // extraction can't be mistaken for an arbitrary user folder by the uninstall script.
+        var copySource = Path.Combine(extractedDir, "MapleWindow");
+
         var scriptPath = Path.Combine(workDir, "apply.cmd");
         File.WriteAllText(scriptPath, BuildApplyScript(), Encoding.ASCII);
 
         var pid = Environment.ProcessId;
+
+        _trayIcon.ShowBalloon("MapleWindow", "업데이트를 적용하고 재시작합니다...");
+
         Process.Start(new ProcessStartInfo
         {
             FileName = "cmd.exe",
-            Arguments = $"/c \"\"{scriptPath}\" {pid} \"{extractedDir}\" \"{installDir}\" \"{exePath}\"\"",
+            Arguments = $"/c \"\"{scriptPath}\" {pid} \"{copySource}\" \"{installDir}\" \"{exePath}\"\"",
             CreateNoWindow = true,
             UseShellExecute = false,
             WindowStyle = ProcessWindowStyle.Hidden,
         });
 
         Log.CloseAndFlush();
+        _trayIcon.Dispose();
         Environment.Exit(0);
     }
 
@@ -88,10 +96,10 @@ public sealed class AppUpdateService
         ":wait\r\n" +
         "tasklist /fi \"PID eq %1\" 2>nul | find \"%1\" >nul\r\n" +
         "if not errorlevel 1 (\r\n" +
-        "  timeout /t 1 /nobreak >nul\r\n" +
+        "  ping -n 2 127.0.0.1 >nul\r\n" +
         "  goto wait\r\n" +
         ")\r\n" +
-        "robocopy \"%2\" \"%3\" /E /IS /IT /NFL /NDL\r\n" +
-        "start \"\" \"%4\"\r\n" +
+        "robocopy \"%~2\" \"%~3\" /E /IS /IT /NFL /NDL\r\n" +
+        "start \"\" /d \"%~3\" \"%~4\"\r\n" +
         "del \"%~f0\"\r\n";
 }

@@ -2,14 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MapleWindow 제거" Height="180" Width="360"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Topmost="True">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" TextWrapping="Wrap" FontSize="14"
+        <TextBlock x:Name="MessageText" Grid.Row="0" TextWrapping="Wrap" FontSize="14"
                    Text="정말 MapleWindow를 삭제하시겠습니까?&#x0a;설정과 캐릭터 데이터가 모두 삭제되며 되돌릴 수 없습니다." />
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
