@@ -1,0 +1,40 @@
+{
+  "entries": {
+    "daily.quest.allUndone": [
+      "용사님~ 오늘 아직 일일퀘스트를 진행하지 않으셨어요!"
+    ],
+    "daily.quest.someUndone": [
+      "용사님~ 오늘 아직 {content_name:을/를} 진행하지 않으셨어요!"
+    ],
+    "daily.monsterPark.notStarted": [
+      "용사님~ 아직 몬스터 파크를 진행하지 않으셨어요!"
+    ],
+    "weekly.content.monToWed": [
+      "용사님~ 이번주 {content_name:을/를} 아직 완료하지 못했어요. 목요일 전까지 꼭 완료하셔야 해요!"
+    ],
+    "weekly.content.thuFri": [
+      "용사님~ 이번주 {content_name:을/를} 아직 완료하지 못했어요. 아직 시간은 많이 남았으니까 천천히 하셔도 됩니다!"
+    ],
+    "weekly.content.satSun": [
+      "용사님~ 이번주 {content_name:을/를} 아직 완료하지 못했어요. 주말에 모두 클리어! 해버리는건 어떨까요?"
+    ],
+    "boss.weekly.allFalse.thuToSat": [
+      "용사님~ 이번주 보스를 아직 처치하지 못했어요! 아직 시간은 많이 남았지만, 오래 걸릴 수도 있으니 조금씩 나눠서 해보는건 어떨까요?"
+    ],
+    "boss.weekly.allFalse.sunToWed": [
+      "용사님~ 이번주 보스를 아직 처치하지 못했어요! 시간이 얼마없으니 재획보다는 보스부터 잡으시는게 어떨까요?"
+    ],
+    "boss.weekly.someFalse": [
+      "용사님~ 이번주 {content_name:을/를} 아직 처치하지 못했어요. 너무 어렵다면 난이도를 낮추거나, 다른 용사님과 함께 잡아보는건 어떨까요?"
+    ],
+    "boss.weekly.allTrueUnderLimit": [
+      "용사님~ 아직 주간보스 클리어 횟수를 채우지 못했어요. 다른 보스들도 처치해보는건 어떨까요?"
+    ],
+    "boss.monthly.early": [
+      "용사님 이번달 {content_name:을/를} 아직 처치하지 못했어요. 아직 시간은 많이 남았으니까 천천히 하셔도 됩니다!"
+    ],
+    "boss.monthly.late": [
+      "용사님 이번달 {content_name:을/를} 아직 처치하지 못했어요. 이번 달이 가기 전에 꼭 처치하셔야 합니다!"
+    ]
+  }
+}

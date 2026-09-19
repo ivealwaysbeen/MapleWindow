@@ -1,0 +1,51 @@
+<Window x:Class="MapleWindow.App.Views.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:MapleWindow.App.Converters"
+        xmlns:vm="clr-namespace:MapleWindow.App.ViewModels"
+        Title="MapleWindow 설정" Height="420" Width="420"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Window.Resources>
+        <conv:EnumEqualsToVisibilityConverter x:Key="StepVisibility" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Step 1: API key -->
+        <StackPanel Grid.Row="0"
+                    Visibility="{Binding CurrentStep, Converter={StaticResource StepVisibility}, ConverterParameter=ApiKey}">
+            <TextBlock Text="Nexon Open API 키를 입력해주세요." FontSize="14" Margin="0,0,0,12" />
+            <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Padding="6" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <!-- Step 2: pick character -->
+        <StackPanel Grid.Row="0"
+                    Visibility="{Binding CurrentStep, Converter={StaticResource StepVisibility}, ConverterParameter=PickCharacter}">
+            <TextBlock Text="위젯에 표시할 캐릭터를 선택해주세요." FontSize="14" Margin="0,0,0,12" />
+            <ListBox ItemsSource="{Binding Characters}"
+                     SelectedItem="{Binding SelectedCharacter}"
+                     DisplayMemberPath="DisplayText"
+                     Height="220" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <TextBlock Text="불러오는 중..." VerticalAlignment="Center" Margin="0,0,12,0"
+                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+            <Button Content="취소" Width="80" Margin="0,0,8,0" Command="{Binding CancelCommand}" />
+            <Button Content="뒤로" Width="80" Margin="0,0,8,0" Command="{Binding BackToApiKeyStepCommand}"
+                    Visibility="{Binding CurrentStep, Converter={StaticResource StepVisibility}, ConverterParameter=PickCharacter}" />
+            <Button Content="다음" Width="80" Command="{Binding FetchCharactersCommand}" IsDefault="True"
+                    Visibility="{Binding CurrentStep, Converter={StaticResource StepVisibility}, ConverterParameter=ApiKey}" />
+            <Button Content="확인" Width="80" Command="{Binding ConfirmCommand}" IsDefault="True"
+                    Visibility="{Binding CurrentStep, Converter={StaticResource StepVisibility}, ConverterParameter=PickCharacter}" />
+        </StackPanel>
+    </Grid>
+</Window>
