@@ -21,6 +21,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <AssemblyName>MapleWindow</AssemblyName>
     <Version>1.0.0</Version>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
